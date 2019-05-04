@@ -8,6 +8,7 @@ import (
 	"os"
 	"runtime"
 	"runtime/pprof"
+	"sync"
 
 	"github.com/ngalaiko/words/topk"
 )
@@ -61,16 +62,14 @@ func fromFile(filepath string, tk *topk.Stream) error {
 		return fmt.Errorf("failed to read `%s`: %s", filepath, err)
 	}
 
-	if err := countWords(file, tk); err != nil {
+	if err := countWords(file, 2<<15-1, tk); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-const batchSize = 2<<15 - 1
-
-func countWords(file *os.File, tk *topk.Stream) error {
+func countWords(file *os.File, batchSize int64, tk *topk.Stream) error {
 	stat, err := file.Stat()
 	if err != nil {
 		return err
@@ -78,7 +77,9 @@ func countWords(file *os.File, tk *topk.Stream) error {
 
 	var offset int64
 	var done bool
+	wg := &sync.WaitGroup{}
 	for offset = 0; offset < stat.Size(); offset += batchSize {
+		wg.Add(1)
 		buff := make([]byte, batchSize)
 
 		off, err := file.ReadAt(buff, offset)
@@ -90,18 +91,22 @@ func countWords(file *os.File, tk *topk.Stream) error {
 			return err
 		}
 
-		go processBatch(buff[:off], tk)
+		go processBatch(buff[:off], tk, wg.Done)
 
 		if done {
 			break
 		}
 	}
 
+	wg.Wait()
+
 	return nil
 }
 
 // returns number of bytes processed
-func processBatch(batch []byte, tk *topk.Stream) {
+func processBatch(batch []byte, tk *topk.Stream, done func()) {
+	defer done()
+
 	wordBuf := make([]byte, 16)
 	wordPos := 0
 
