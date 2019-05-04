@@ -8,8 +8,26 @@ import (
 	"os"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/ngalaiko/words/count"
 )
+
+func Test_processBatch(t *testing.T) {
+	batch := "one two three four five"
+	tk := count.New(10)
+	processBatch([]byte(batch), 4, tk)
+
+	resMap := map[string]int{}
+	for _, key := range tk.Keys() {
+		resMap[key.Key] = int(key.Count)
+	}
+
+	assert.Equal(t, 1, resMap["one"])
+	assert.Equal(t, 1, resMap["two"])
+	assert.Equal(t, 1, resMap["four"])
+	assert.Equal(t, 1, resMap["five"])
+}
 
 func Test(t *testing.T) {
 	file, err := ioutil.TempFile("assets", "test")
@@ -72,12 +90,11 @@ func randWord(n int) string {
 
 func Benchmark_read(b *testing.B) {
 	files := []string{
-		//"./assets/test.txt",
-		//"./assets/10lines.txt",
-		//"./assets/100lines.txt",
+		"./assets/10lines.txt",
+		"./assets/100lines.txt",
 		"./assets/1000lines.txt",
-		//"./assets/10000lines.txt",
-		//"./assets/100000lines.txt",
+		"./assets/10000lines.txt",
+		"./assets/100000lines.txt",
 	}
 
 	for _, filePath := range files {

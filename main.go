@@ -76,6 +76,7 @@ func fromFile(filepath string, batchSize int64, tk *count.Stream) error {
 			if err != nil {
 				return fmt.Errorf("failed to read `%s`: %s", filepath, err)
 			}
+			defer file.Close()
 
 			buff := make([]byte, batchSize)
 
@@ -88,7 +89,7 @@ func fromFile(filepath string, batchSize int64, tk *count.Stream) error {
 				return err
 			}
 
-			processBatch(buff[:off], tk)
+			processBatch(buff[:off], maxLen, tk)
 
 			return nil
 		})
@@ -97,40 +98,49 @@ func fromFile(filepath string, batchSize int64, tk *count.Stream) error {
 	return wg.Wait()
 }
 
-// returns number of bytes processed
-func processBatch(batch []byte, tk *count.Stream) {
-	wordBuf := make([]byte, 16)
-	wordPos := 0
+const maxLen = 4
 
-	// TODO: there might be a case when a word is splitted by a buffered read
+// returns number of bytes processed
+func processBatch(batch []byte, maxLen int, tk *count.Stream) {
+	wordBuf := make([]byte, maxLen)
+	wordPos := 0
+	skip := false
+
+	// TODO: there is a case when a word is splitted by a buffered read
+	// NOTE: we don't care
 
 	for _, c := range batch {
-		skipWord := false
 		switch {
 		// 10 is a `LF` char for at the end of file
 		case c == ' ', c == 10:
-			if skipWord {
+			if wordPos == 0 {
 				continue
 			}
 
-			if wordPos == 0 {
+			if skip {
+				skip = false
+				wordPos = 0
 				continue
 			}
 
 			word := string(wordBuf[:wordPos])
 			tk.Insert(word)
 
-			wordPos = 0
+			fallthrough
 		case c < 'A' || c > 'z', c > 'Z' && c < 'a':
 			wordPos = 0
+			skip = false
 		default:
-			if wordPos >= cap(wordBuf) {
-				// skip too long words
-				skipWord = true
+			if wordPos == cap(wordBuf) {
+				skip = true
 				continue
 			}
 			wordBuf[wordPos] = c
 			wordPos++
 		}
+	}
+
+	if wordPos > 0 && wordPos <= maxLen {
+		tk.Insert(string(wordBuf[:wordPos]))
 	}
 }
