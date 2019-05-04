@@ -10,7 +10,7 @@ import (
 	"runtime/pprof"
 	"sync"
 
-	"github.com/ngalaiko/words/topk"
+	count "github.com/ngalaiko/words/count"
 )
 
 var filePath = flag.String("file", "", "path to input file")
@@ -33,10 +33,10 @@ func main() {
 		defer pprof.StopCPUProfile()
 	}
 
-	tk := topk.New(*topN)
-	err := fromFile(*filePath, tk)
-	for _, key := range tk.Keys() {
-		fmt.Printf("%d: %s\n", key.Count, key.Key)
+	tk := count.New(*topN)
+	err := fromFile(*filePath, 2<<15-1, tk)
+	for _, e := range tk.Keys() {
+		fmt.Printf("%d: %s\n", e.Count, e.Key)
 	}
 
 	if *memprofile != "" {
@@ -56,33 +56,19 @@ func main() {
 	}
 }
 
-func fromFile(filepath string, tk *topk.Stream) error {
+func fromFile(filepath string, batchSize int64, tk *count.Stream) error {
 	file, err := os.Open(filepath)
 	if err != nil {
 		return fmt.Errorf("failed to read `%s`: %s", filepath, err)
 	}
 
-	if err := countWords(file, 2<<15-1, tk); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func countWords(file *os.File, batchSize int64, tk *topk.Stream) error {
-	stat, err := file.Stat()
-	if err != nil {
-		return err
-	}
-
-	var offset int64
 	var done bool
 	wg := &sync.WaitGroup{}
-	for offset = 0; offset < stat.Size(); offset += batchSize {
+	for {
 		wg.Add(1)
 		buff := make([]byte, batchSize)
 
-		off, err := file.ReadAt(buff, offset)
+		off, err := file.Read(buff)
 		switch err {
 		case io.EOF:
 			done = true
@@ -104,7 +90,7 @@ func countWords(file *os.File, batchSize int64, tk *topk.Stream) error {
 }
 
 // returns number of bytes processed
-func processBatch(batch []byte, tk *topk.Stream, done func()) {
+func processBatch(batch []byte, tk *count.Stream, done func()) {
 	defer done()
 
 	wordBuf := make([]byte, 16)
@@ -125,7 +111,7 @@ func processBatch(batch []byte, tk *topk.Stream, done func()) {
 				continue
 			}
 
-			tk.Insert(string(wordBuf[:wordPos]), 1)
+			tk.Insert(string(wordBuf[:wordPos]))
 
 			wordPos = 0
 		case c < 'A' || c > 'z', c > 'Z' && c < 'a':
@@ -140,14 +126,4 @@ func processBatch(batch []byte, tk *topk.Stream, done func()) {
 			wordPos++
 		}
 	}
-}
-
-const maxUint = ^uint(0)
-
-func processWords(wordsChan <-chan []byte, doneChan chan bool, tk *topk.Stream) {
-	for word := range wordsChan {
-		tk.Insert(string(word), 1)
-	}
-
-	close(doneChan)
 }

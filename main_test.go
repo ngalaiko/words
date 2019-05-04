@@ -8,7 +8,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/ngalaiko/words/topk"
+	"github.com/ngalaiko/words/count"
 )
 
 func Test(t *testing.T) {
@@ -18,31 +18,43 @@ func Test(t *testing.T) {
 	}
 	defer os.Remove(file.Name())
 
-	wordsMap := map[string]int{}
-	wordsMapCpy := map[string]int{}
+	wordsMap := map[string]uint64{}
+	wordsMapCpy := map[string]uint64{}
 	for i := 0; i < 100; i++ {
 		length := rand.Intn(10) + 1
 		word := randWord(length)
-		wordsMap[word] = rand.Intn(100) + 1
+		wordsMap[word] = uint64(rand.Intn(32) + 1)
 
 		wordsMapCpy[word] = wordsMap[word]
 	}
 
-	for word := range wordsMap {
-		if wordsMap[word] == 0 {
-			continue
+	for len(wordsMap) != 0 {
+		var word string
+		for w := range wordsMap {
+			word = w
 		}
 
-		file.WriteString(word + "\n")
+		file.WriteString(word + " ")
+		if rand.Float64() >= 0.5 {
+			file.WriteString("\n")
+		}
+
+		if wordsMap[word] == 1 {
+			delete(wordsMap, word)
+		} else {
+			wordsMap[word]--
+		}
 	}
 
-	tk := topk.New(10)
-	if err := fromFile(file.Name(), tk); err != nil {
+	tk := count.New(10)
+	if err := fromFile(file.Name(), 100, tk); err != nil {
 		t.Fatal(err)
 	}
 
-	for _, key := range tk.Keys() {
-		fmt.Printf("%s: got %d, expected %d\n", key.Key, key.Count, wordsMapCpy[key.Key])
+	for _, e := range tk.Keys() {
+		if uint64(e.Count) != wordsMapCpy[e.Key] {
+			fmt.Printf("%s: got %d, expected %d\n", e.Key, e.Count, wordsMapCpy[e.Key])
+		}
 	}
 }
 
@@ -73,8 +85,8 @@ func Benchmark_read(b *testing.B) {
 			b.ResetTimer()
 
 			for i := 0; i < b.N; i++ {
-				tk := topk.New(10)
-				fromFile(filePath, tk)
+				tk := count.New(10)
+				fromFile(filePath, 2<<15-1, tk)
 			}
 		})
 	}
