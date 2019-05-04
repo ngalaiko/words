@@ -9,7 +9,7 @@ import (
 	"runtime"
 	"runtime/pprof"
 
-	"github.com/dgryski/go-topk"
+	"github.com/ngalaiko/words/topk"
 )
 
 var filePath = flag.String("file", "", "path to input file")
@@ -90,7 +90,7 @@ func countWords(file *os.File, tk *topk.Stream) error {
 			return err
 		}
 
-		processBatch(buff[:off], tk)
+		go processBatch(buff[:off], tk)
 
 		if done {
 			break

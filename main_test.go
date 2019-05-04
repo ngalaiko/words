@@ -3,12 +3,12 @@ package main
 import (
 	"testing"
 
-	"github.com/dgryski/go-topk"
+	"github.com/ngalaiko/words/topk"
 )
 
 func Test(t *testing.T) {
 	tk := topk.New(10)
-	if err := fromFile("./assets/100000lines.txt", tk); err != nil {
+	if err := fromFile("./assets/1000lines.txt", tk); err != nil {
 		t.Fatal(err)
 	}
 }
