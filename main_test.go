@@ -88,7 +88,7 @@ func randWord(n int) string {
 
 }
 
-func Benchmark_read(b *testing.B) {
+func Benchmark__length(b *testing.B) {
 	files := []string{
 		"./assets/10lines.txt",
 		"./assets/100lines.txt",
@@ -104,6 +104,28 @@ func Benchmark_read(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 				tk := count.New(10)
 				fromFile(filePath, 2<<15-1, tk)
+			}
+		})
+	}
+}
+
+func Benchmark_buffer(b *testing.B) {
+	bufSizes := []int64{
+		2<<16 - 1,
+		2<<17 - 1,
+		2<<18 - 1,
+		2<<19 - 1,
+		2<<20 - 1,
+		2<<21 - 1,
+	}
+
+	for _, size := range bufSizes {
+		b.Run(fmt.Sprint(size), func(b *testing.B) {
+			b.ResetTimer()
+
+			for i := 0; i < b.N; i++ {
+				tk := count.New(10)
+				fromFile("./assets/1000000lines.txt", size, tk)
 			}
 		})
 	}

@@ -1,15 +1,14 @@
 package count
 
 import (
-	"sort"
 	"sync"
 )
 
 type Stream struct {
 	n int
 
-	m      map[string]uint64
-	mGuard *sync.RWMutex
+	frequencyMap map[string]uint64
+	guard        *sync.RWMutex
 }
 
 type Element struct {
@@ -19,36 +18,41 @@ type Element struct {
 
 func New(n int) *Stream {
 	return &Stream{
-		n:      n,
-		m:      make(map[string]uint64, n),
-		mGuard: &sync.RWMutex{},
+		n:            n,
+		frequencyMap: make(map[string]uint64, n),
+		guard:        &sync.RWMutex{},
 	}
 }
 
 func (c *Stream) Keys() []Element {
-	c.mGuard.RLock()
-	defer c.mGuard.RUnlock()
+	c.guard.RLock()
+	defer c.guard.RUnlock()
 
-	ee := make([]Element, 0, len(c.m))
-	for word, count := range c.m {
-		ee = append(ee, Element{
-			Count: count,
-			Key:   word,
+	// NOTE:
+	// 2^25 = 33554432
+	// assume it's larger then a number of occurrences for the most frequent word
+	freq := make([]*string, 2<<25)
+	for word, count := range c.frequencyMap {
+		wCopy := word
+		freq[count] = &wCopy
+	}
+
+	res := make([]Element, 0, 10)
+	for i := uint64(len(freq) - 1); i >= 0 && len(res) < c.n; i-- {
+		if freq[i] == nil {
+			continue
+		}
+		res = append(res, Element{
+			Key:   *freq[i],
+			Count: i,
 		})
 	}
 
-	sort.Slice(ee, func(i, j int) bool {
-		return ee[i].Count > ee[j].Count
-	})
-
-	if len(ee) > c.n {
-		return ee[:c.n]
-	}
-	return ee
+	return res
 }
 
 func (c *Stream) Insert(word string) {
-	c.mGuard.Lock()
-	c.m[word]++
-	c.mGuard.Unlock()
+	c.guard.Lock()
+	c.frequencyMap[word]++
+	c.guard.Unlock()
 }

@@ -8,6 +8,7 @@ import (
 	"os"
 	"runtime"
 	"runtime/pprof"
+	"strings"
 
 	"golang.org/x/sync/errgroup"
 
@@ -35,7 +36,7 @@ func main() {
 	}
 
 	tk := count.New(*topN)
-	err := fromFile(*filePath, 2<<15-1, tk)
+	err := fromFile(*filePath, 2<<19-1, tk)
 	for _, e := range tk.Keys() {
 		fmt.Printf("%d: %s\n", e.Count, e.Key)
 	}
@@ -68,15 +69,15 @@ func fromFile(filepath string, batchSize int64, tk *count.Stream) error {
 	}
 	_ = file.Close()
 
+	all := info.Size() / batchSize
 	wg := &errgroup.Group{}
-	for i := int64(0); i < info.Size()/batchSize+1; i++ {
+	for i := int64(0); i < all; i++ {
 		i := i
 		wg.Go(func() error {
 			file, err := os.Open(filepath)
 			if err != nil {
 				return fmt.Errorf("failed to read `%s`: %s", filepath, err)
 			}
-			defer file.Close()
 
 			buff := make([]byte, batchSize)
 
@@ -88,6 +89,8 @@ func fromFile(filepath string, batchSize int64, tk *count.Stream) error {
 			default:
 				return err
 			}
+
+			_ = file.Close()
 
 			processBatch(buff[:off], maxLen, tk)
 
@@ -123,7 +126,8 @@ func processBatch(batch []byte, maxLen int, tk *count.Stream) {
 				continue
 			}
 
-			word := string(wordBuf[:wordPos])
+			word := strings.ToLower(string(wordBuf[:wordPos]))
+
 			tk.Insert(word)
 
 			fallthrough
@@ -131,7 +135,13 @@ func processBatch(batch []byte, maxLen int, tk *count.Stream) {
 			wordPos = 0
 			skip = false
 		default:
+			// skip long words
 			if wordPos == cap(wordBuf) {
+				skip = true
+				continue
+			}
+			// skip words with double letters
+			if wordPos > 1 && c == wordBuf[wordPos-1] {
 				skip = true
 				continue
 			}
