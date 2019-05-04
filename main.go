@@ -8,10 +8,10 @@ import (
 	"os"
 	"runtime"
 	"runtime/pprof"
-	"strings"
 
 	"golang.org/x/sync/errgroup"
 
+	"github.com/ngalaiko/words/common"
 	"github.com/ngalaiko/words/count"
 )
 
@@ -36,7 +36,7 @@ func main() {
 	}
 
 	tk := count.New(*topN)
-	err := fromFile(*filePath, 2<<19-1, tk)
+	err := fromFile(*filePath, 2<<24-1, tk)
 	for _, e := range tk.Keys() {
 		fmt.Printf("%d: %s\n", e.Count, e.Key)
 	}
@@ -107,7 +107,6 @@ const maxLen = 4
 func processBatch(batch []byte, maxLen int, tk *count.Stream) {
 	wordBuf := make([]byte, maxLen)
 	wordPos := 0
-	skip := false
 
 	// TODO: there is a case when a word is splitted by a buffered read
 	// NOTE: we don't care
@@ -120,31 +119,22 @@ func processBatch(batch []byte, maxLen int, tk *count.Stream) {
 				continue
 			}
 
-			if skip {
-				skip = false
-				wordPos = 0
-				continue
+			word := string(wordBuf[:wordPos])
+			if common.Map[word] {
+				tk.Insert(word)
 			}
-
-			word := strings.ToLower(string(wordBuf[:wordPos]))
-
-			tk.Insert(word)
 
 			fallthrough
 		case c < 'A' || c > 'z', c > 'Z' && c < 'a':
 			wordPos = 0
-			skip = false
+			//skip = false
 		default:
 			// skip long words
 			if wordPos == cap(wordBuf) {
-				skip = true
+				//skip = true
 				continue
 			}
 			// skip words with double letters
-			if wordPos > 1 && c == wordBuf[wordPos-1] {
-				skip = true
-				continue
-			}
 			wordBuf[wordPos] = c
 			wordPos++
 		}

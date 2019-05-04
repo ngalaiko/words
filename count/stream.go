@@ -2,6 +2,8 @@ package count
 
 import (
 	"sync"
+
+	"github.com/ngalaiko/words/common"
 )
 
 type Stream struct {
@@ -19,7 +21,7 @@ type Element struct {
 func New(n int) *Stream {
 	return &Stream{
 		n:            n,
-		frequencyMap: make(map[string]uint64, n),
+		frequencyMap: make(map[string]uint64, len(common.Map)),
 		guard:        &sync.RWMutex{},
 	}
 }

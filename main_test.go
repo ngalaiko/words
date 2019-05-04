@@ -14,7 +14,13 @@ import (
 )
 
 func Test_processBatch(t *testing.T) {
-	batch := "one two three four five"
+	batch := `
+one
+two two
+three three three
+four four four four
+five five five five five
+`
 	tk := count.New(10)
 	processBatch([]byte(batch), 4, tk)
 
@@ -24,9 +30,9 @@ func Test_processBatch(t *testing.T) {
 	}
 
 	assert.Equal(t, 1, resMap["one"])
-	assert.Equal(t, 1, resMap["two"])
-	assert.Equal(t, 1, resMap["four"])
-	assert.Equal(t, 1, resMap["five"])
+	assert.Equal(t, 2, resMap["two"])
+	assert.Equal(t, 4, resMap["four"])
+	assert.Equal(t, 5, resMap["five"])
 }
 
 func Test(t *testing.T) {
