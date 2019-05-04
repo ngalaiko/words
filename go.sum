@@ -1,4 +1,2 @@
-github.com/dgryski/go-sip13 v0.0.0-20190329191031-25c5027a8c7b h1:Yqiad0+sloMPdd/0Fg22actpFx0dekpzt1xJmVNVkU0=
-github.com/dgryski/go-sip13 v0.0.0-20190329191031-25c5027a8c7b/go.mod h1:vAd38F8PWV+bWy6jNmig1y/TA+kYO4g3RSRF0IAv0no=
-github.com/dgryski/go-topk v0.0.0-20170530140213-125785487421 h1:WzBppckSUjJ1R0jTbxmuw6YKfuk5Rq5pniF5rcH/whA=
-github.com/dgryski/go-topk v0.0.0-20170530140213-125785487421/go.mod h1:XdUF+2m4elfTD0SvaJqRmv2OxJsC1YUz+7ONws6WOQU=
+golang.org/x/sync v0.0.0-20190423024810-112230192c58 h1:8gQV6CLnAEikrhgkHFbMAEhagSSnXWGV915qUMm9mrU=
+golang.org/x/sync v0.0.0-20190423024810-112230192c58/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=

@@ -40,7 +40,11 @@ func (c *Stream) Keys() []Element {
 	sort.Slice(ee, func(i, j int) bool {
 		return ee[i].Count > ee[j].Count
 	})
-	return ee[:c.n]
+
+	if len(ee) > c.n {
+		return ee[:c.n]
+	}
+	return ee
 }
 
 func (c *Stream) Insert(word string) {

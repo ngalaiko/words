@@ -72,12 +72,12 @@ func randWord(n int) string {
 
 func Benchmark_read(b *testing.B) {
 	files := []string{
-		"./assets/test.txt",
-		"./assets/10lines.txt",
-		"./assets/100lines.txt",
+		//"./assets/test.txt",
+		//"./assets/10lines.txt",
+		//"./assets/100lines.txt",
 		"./assets/1000lines.txt",
-		"./assets/10000lines.txt",
-		"./assets/100000lines.txt",
+		//"./assets/10000lines.txt",
+		//"./assets/100000lines.txt",
 	}
 
 	for _, filePath := range files {

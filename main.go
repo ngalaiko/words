@@ -8,9 +8,10 @@ import (
 	"os"
 	"runtime"
 	"runtime/pprof"
-	"sync"
 
-	count "github.com/ngalaiko/words/count"
+	"golang.org/x/sync/errgroup"
+
+	"github.com/ngalaiko/words/count"
 )
 
 var filePath = flag.String("file", "", "path to input file")
@@ -61,38 +62,43 @@ func fromFile(filepath string, batchSize int64, tk *count.Stream) error {
 	if err != nil {
 		return fmt.Errorf("failed to read `%s`: %s", filepath, err)
 	}
+	info, err := file.Stat()
+	if err != nil {
+		return fmt.Errorf("failed to stat `%s`: %s", filepath, err)
+	}
+	_ = file.Close()
 
-	var done bool
-	wg := &sync.WaitGroup{}
-	for {
-		wg.Add(1)
-		buff := make([]byte, batchSize)
+	wg := &errgroup.Group{}
+	for i := int64(0); i < info.Size()/batchSize+1; i++ {
+		i := i
+		wg.Go(func() error {
+			file, err := os.Open(filepath)
+			if err != nil {
+				return fmt.Errorf("failed to read `%s`: %s", filepath, err)
+			}
 
-		off, err := file.Read(buff)
-		switch err {
-		case io.EOF:
-			done = true
-		case nil:
-		default:
-			return err
-		}
+			buff := make([]byte, batchSize)
 
-		go processBatch(buff[:off], tk, wg.Done)
+			off, err := file.ReadAt(buff, batchSize*i)
+			switch err {
+			case nil:
+			case io.EOF:
+				return nil
+			default:
+				return err
+			}
 
-		if done {
-			break
-		}
+			processBatch(buff[:off], tk)
+
+			return nil
+		})
 	}
 
-	wg.Wait()
-
-	return nil
+	return wg.Wait()
 }
 
 // returns number of bytes processed
-func processBatch(batch []byte, tk *count.Stream, done func()) {
-	defer done()
-
+func processBatch(batch []byte, tk *count.Stream) {
 	wordBuf := make([]byte, 16)
 	wordPos := 0
 
@@ -111,7 +117,8 @@ func processBatch(batch []byte, tk *count.Stream, done func()) {
 				continue
 			}
 
-			tk.Insert(string(wordBuf[:wordPos]))
+			word := string(wordBuf[:wordPos])
+			tk.Insert(word)
 
 			wordPos = 0
 		case c < 'A' || c > 'z', c > 'Z' && c < 'a':
