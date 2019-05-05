@@ -42,7 +42,7 @@ func (c *Stream) Keys() []Element {
 	}
 
 	res := make([]Element, 0, 10)
-	for i := uint64(len(freq) - 1); i >= 0 && len(res) < c.n; i-- {
+	for i := uint64(len(freq) - 1); i > 0 && len(res) < c.n; i-- {
 		if freq[i] == nil {
 			continue
 		}

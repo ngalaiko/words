@@ -119,7 +119,6 @@ func processBatch(batch []byte, maxLen int, tk *count.Stream) {
 			fallthrough
 		case c < 'A' || c > 'z', c > 'Z' && c < 'a':
 			wordPos = 0
-			//skip = false
 		default:
 			// skip long words
 			if wordPos == maxLen {
