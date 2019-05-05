@@ -21,6 +21,8 @@ type Element struct {
 func New(n int) *Stream {
 	return &Stream{
 		n: n,
+		// NOTE: Implementation of a map with CAS acces to avoid locking
+		// https://en.wikipedia.org/wiki/Compare-and-swap
 		frequencyMap: hashmap.New(
 			uintptr(len(common.Map)),
 		),
@@ -28,10 +30,11 @@ func New(n int) *Stream {
 }
 
 func (c *Stream) Keys() []Element {
-	// NOTE:
-	// 2^25 = 33554432
+	// NOTE: 2^25 = 33554432
 	// assume it's larger then a number of occurrences for the most frequent word
+	// and use bucket sort to find the most frequent comments
 	freq := make([]*string, 2<<25)
+
 	for kv := range c.frequencyMap.Iter() {
 		wCopy := kv.Key.(string)
 		counter := kv.Value.(*int64)
@@ -54,6 +57,9 @@ func (c *Stream) Keys() []Element {
 
 func (c *Stream) Insert(word string) {
 	if !common.Map[word] {
+		// NOTE: Assume that 14m words pretty much represent English language and
+		// count only 100 most common words in the English language.
+		// https://en.wikipedia.org/wiki/Law_of_large_numbers
 		return
 	}
 

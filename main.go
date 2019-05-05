@@ -72,6 +72,7 @@ func fromFile(filepath string, batchSize int64, tk *count.Stream) error {
 	wg := &errgroup.Group{}
 	for i := int64(0); i < all; i++ {
 		i := i
+		// NOTE: read concurrently and process in batch
 		wg.Go(func() error {
 			file, err := os.Open(filepath)
 			if err != nil {
