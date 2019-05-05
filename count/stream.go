@@ -1,16 +1,16 @@
 package count
 
 import (
-	"sync"
+	"sync/atomic"
 
+	"github.com/cornelk/hashmap"
 	"github.com/ngalaiko/words/common"
 )
 
 type Stream struct {
 	n int
 
-	frequencyMap map[string]uint64
-	guard        *sync.RWMutex
+	frequencyMap *hashmap.HashMap
 }
 
 type Element struct {
@@ -20,23 +20,22 @@ type Element struct {
 
 func New(n int) *Stream {
 	return &Stream{
-		n:            n,
-		frequencyMap: make(map[string]uint64, len(common.Map)),
-		guard:        &sync.RWMutex{},
+		n: n,
+		frequencyMap: hashmap.New(
+			uintptr(len(common.Map)),
+		),
 	}
 }
 
 func (c *Stream) Keys() []Element {
-	c.guard.RLock()
-	defer c.guard.RUnlock()
-
 	// NOTE:
 	// 2^25 = 33554432
 	// assume it's larger then a number of occurrences for the most frequent word
 	freq := make([]*string, 2<<25)
-	for word, count := range c.frequencyMap {
-		wCopy := word
-		freq[count] = &wCopy
+	for kv := range c.frequencyMap.Iter() {
+		wCopy := kv.Key.(string)
+		counter := kv.Value.(*int64)
+		freq[*counter] = &wCopy
 	}
 
 	res := make([]Element, 0, 10)
@@ -57,7 +56,9 @@ func (c *Stream) Insert(word string) {
 	if !common.Map[word] {
 		return
 	}
-	c.guard.Lock()
-	c.frequencyMap[word]++
-	c.guard.Unlock()
+
+	var i int64
+	actual, _ := c.frequencyMap.GetOrInsert(word, &i)
+	counter := (actual).(*int64)
+	atomic.AddInt64(counter, 1)
 }

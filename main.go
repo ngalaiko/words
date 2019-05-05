@@ -35,7 +35,7 @@ func main() {
 	}
 
 	tk := count.New(*topN)
-	err := fromFile(*filePath, 2<<24-1, tk)
+	err := fromFile(*filePath, 2<<19-1, tk)
 	for _, e := range tk.Keys() {
 		fmt.Printf("%d: %s\n", e.Count, e.Key)
 	}
