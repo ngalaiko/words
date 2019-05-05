@@ -62,11 +62,12 @@ func fromFile(filepath string, batchSize int64, tk *count.Stream) error {
 	if err != nil {
 		return fmt.Errorf("failed to read `%s`: %s", filepath, err)
 	}
+	defer file.Close()
+
 	info, err := file.Stat()
 	if err != nil {
 		return fmt.Errorf("failed to stat `%s`: %s", filepath, err)
 	}
-	_ = file.Close()
 
 	all := info.Size() / batchSize
 	wg := &errgroup.Group{}
@@ -74,10 +75,6 @@ func fromFile(filepath string, batchSize int64, tk *count.Stream) error {
 		i := i
 		// NOTE: read concurrently and process in batch
 		wg.Go(func() error {
-			file, err := os.Open(filepath)
-			if err != nil {
-				return fmt.Errorf("failed to read `%s`: %s", filepath, err)
-			}
 
 			buff := make([]byte, batchSize)
 
@@ -89,8 +86,6 @@ func fromFile(filepath string, batchSize int64, tk *count.Stream) error {
 			default:
 				return err
 			}
-
-			_ = file.Close()
 
 			processBatch(buff[:off], maxLen, tk)
 
