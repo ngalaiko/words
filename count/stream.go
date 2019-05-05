@@ -24,7 +24,7 @@ func New(n int) *Stream {
 		// NOTE: Implementation of a map with CAS acces to avoid locking
 		// https://en.wikipedia.org/wiki/Compare-and-swap
 		frequencyMap: hashmap.New(
-			uintptr(len(common.Words)),
+			uintptr(common.Words.Len()),
 		),
 	}
 }
@@ -56,7 +56,7 @@ func (c *Stream) Keys() []Element {
 }
 
 func (c *Stream) Insert(word string) {
-	if !common.Words[word] {
+	if _, ok := common.Words.GetStringKey(word); !ok {
 		// NOTE: Assume that 14m words pretty much represent English language and
 		// count only 100 most common words in the English language.
 		// https://en.wikipedia.org/wiki/Law_of_large_numbers

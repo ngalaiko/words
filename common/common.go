@@ -1,11 +1,13 @@
 package common
 
+import "github.com/cornelk/hashmap"
+
 // Words is a map of the most common words in English.
-var Words = make(map[string]bool, len(mostCommonWords))
+var Words = hashmap.New(uintptr(len(mostCommonWords)))
 
 func init() {
 	for _, word := range mostCommonWords {
-		Words[word] = true
+		Words.Set(word, struct{}{})
 	}
 }
 

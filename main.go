@@ -122,8 +122,7 @@ func processBatch(batch []byte, maxLen int, tk *count.Stream) {
 			//skip = false
 		default:
 			// skip long words
-			if wordPos == cap(wordBuf) {
-				//skip = true
+			if wordPos == maxLen {
 				continue
 			}
 			// skip words with double letters
