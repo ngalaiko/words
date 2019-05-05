@@ -54,6 +54,9 @@ func (c *Stream) Keys() []Element {
 }
 
 func (c *Stream) Insert(word string) {
+	if !common.Map[word] {
+		return
+	}
 	c.guard.Lock()
 	c.frequencyMap[word]++
 	c.guard.Unlock()

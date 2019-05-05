@@ -11,7 +11,6 @@ import (
 
 	"golang.org/x/sync/errgroup"
 
-	"github.com/ngalaiko/words/common"
 	"github.com/ngalaiko/words/count"
 )
 
@@ -119,10 +118,7 @@ func processBatch(batch []byte, maxLen int, tk *count.Stream) {
 				continue
 			}
 
-			word := string(wordBuf[:wordPos])
-			if common.Map[word] {
-				tk.Insert(word)
-			}
+			tk.Insert(string(wordBuf[:wordPos]))
 
 			fallthrough
 		case c < 'A' || c > 'z', c > 'Z' && c < 'a':
