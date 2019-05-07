@@ -104,29 +104,27 @@ func processBatch(batch []byte, maxLen int, tk *count.Stream) {
 	wordPos := 0
 
 	// TODO: there is a case when a word is splitted by a buffered read
-	// NOTE: we don't care
+	// NOTE: I don't care
 
 	for _, c := range batch {
 		switch {
-		// 10 is a `LF` char for at the end of file
-		case c == ' ', c == 10:
+		case c >= 'A' && c <= 'Z':
+			c += 32
+			fallthrough
+		case c >= 'a' && c <= 'z':
+			if wordPos == maxLen {
+				continue
+			}
+			wordBuf[wordPos] = c
+			wordPos++
+		default:
 			if wordPos == 0 {
 				continue
 			}
 
 			tk.Insert(string(wordBuf[:wordPos]))
 
-			fallthrough
-		case c < 'A' || c > 'z', c > 'Z' && c < 'a':
 			wordPos = 0
-		default:
-			// skip long words
-			if wordPos == maxLen {
-				continue
-			}
-			// skip words with double letters
-			wordBuf[wordPos] = c
-			wordPos++
 		}
 	}
 

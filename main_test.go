@@ -16,10 +16,10 @@ import (
 func Test_processBatch(t *testing.T) {
 	batch := `
 the
-of of
-about about about
-with with with with
-that that that that that
+(of <of>
+get) get get
+With with with-wiTH
+that THAT that that (ThAt)
 `
 	tk := count.New(10)
 	processBatch([]byte(batch), 4, tk)
@@ -31,6 +31,7 @@ that that that that that
 
 	assert.Equal(t, 1, resMap["the"])
 	assert.Equal(t, 2, resMap["of"])
+	assert.Equal(t, 3, resMap["get"])
 	assert.Equal(t, 4, resMap["with"])
 	assert.Equal(t, 5, resMap["that"])
 }
